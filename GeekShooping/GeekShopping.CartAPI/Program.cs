@@ -10,6 +10,8 @@ using MySqlConnector;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var connection = builder.Configuration["MySQLConnection:MySQLConnectionString"];
+
 builder.Services.AddDbContext<MySQLContext>(context => context.UseMySql(
    "server=localhost;DataBase=geek_shopping_cart_api;uid=root;pwd=1234",
    Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.28"))
@@ -22,11 +24,14 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 //Repository - Possível Problemas!!!
 builder.Services.AddScoped<ICartRepository, CartRepository>();
+builder.Services.AddScoped<ICouponRepository, CouponRepository>();
+
 builder.Services.AddSingleton<IRabbitMQMessageSender, RabbitMQMessageSender>();
 
-// Add services to the container.
-
 builder.Services.AddControllers();
+
+builder.Services.AddHttpClient<ICouponRepository, CouponRepository>(s => s.BaseAddress = 
+    new Uri(builder.Configuration["ServiceUrls:CouponAPI"]));
 
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>

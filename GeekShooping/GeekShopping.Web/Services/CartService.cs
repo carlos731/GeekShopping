@@ -53,8 +53,7 @@ namespace GeekShopping.Web.Services
             if (response.IsSuccessStatusCode)
             {
                 return await response.ReadContentAs<CartHeaderViewModel>();
-            } else if (response.StatusCode.ToString().Equals("PrecondicontionFailed"))
-            {
+            } else if (response.StatusCode.ToString().Equals("PreconditionFailed")) {
                 return "Coupon Price has changed, please confirm!";
             }
             else throw new Exception("Something went wrong when calling API");
