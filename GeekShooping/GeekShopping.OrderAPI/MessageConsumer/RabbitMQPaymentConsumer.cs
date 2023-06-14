@@ -14,12 +14,16 @@ namespace GeekShopping.OrderAPI.MessageConsumer
         private readonly OrderRepository _repository;
         private IConnection _connection;
         private IModel _channel;
-        private IRabbitMQMessageSender _rabbitMQMessageSender;
+        //private IRabbitMQMessageSender _rabbitMQMessageSender; // Não precisa mais
+        private const string ExchangeName = "DirectPaymentUpdateExchange";
+        private const string PaymentOrderUpdateQueueName = "PaymentOrderUpdateQueueName";
+        //string queueName = ""; //Não precisa mais
 
-        public RabbitMQPaymentConsumer(OrderRepository repository, IRabbitMQMessageSender rabbitMQMessageSender)
+
+        public RabbitMQPaymentConsumer(OrderRepository repository/*, IRabbitMQMessageSender rabbitMQMessageSender*/)
         {
             _repository = repository;
-            _rabbitMQMessageSender = rabbitMQMessageSender;
+            //_rabbitMQMessageSender = rabbitMQMessageSender;
             var factory = new ConnectionFactory
             {
                 HostName = "localhost",
@@ -28,7 +32,10 @@ namespace GeekShopping.OrderAPI.MessageConsumer
             };
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
-            _channel.QueueDeclare(queue: "orderpaymentresultqueue", false, false, false, arguments: null);
+            //_channel.QueueDeclare(queue: "orderpaymentresultqueue", false, false, false, arguments: null);
+            _channel.ExchangeDeclare(ExchangeName, ExchangeType.Direct);
+            _channel.QueueDeclare(PaymentOrderUpdateQueueName, false, false, false, null);
+            _channel.QueueBind(PaymentOrderUpdateQueueName, ExchangeName, "PaymentOrder");
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -42,7 +49,7 @@ namespace GeekShopping.OrderAPI.MessageConsumer
                 UpdatePaymentStatus(vo).GetAwaiter().GetResult();
                 _channel.BasicAck(evt.DeliveryTag, false);
             };
-            _channel.BasicConsume("orderpaymentresultqueue", false, consumer);
+            _channel.BasicConsume(PaymentOrderUpdateQueueName, false, consumer);
             return Task.CompletedTask;
 
         }
